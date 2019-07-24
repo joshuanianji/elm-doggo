@@ -31,38 +31,30 @@ view model =
 
 pictureView : Model -> Element Msg
 pictureView model =
-    Element.el
-        [ width (Element.fillPortion 2)
-        , height fill
-        , padding 40
-        ]
-        (Modules.picture model)
+    case model.pictures of
+        Ok pictures ->
+            el
+                [ width (fillPortion 2)
+                , height fill
+                , padding 40
+                ]
+                (Modules.picture pictures)
+
+        Err errors ->
+            el
+                [ width (fillPortion 2) ]
+            <|
+                errorView "Cannot view picture :(" errors
 
 
 musicView : Model -> Element Msg
 musicView model =
     case model.music of
         Err errors ->
-            Element.column
-                [ width (Element.fillPortion 2)
-                , height fill
-                , Element.spacing 40
-                ]
-                [ Element.paragraph
-                    [ Font.size 70
-                    , Font.bold
-                    , Font.center
-                    ]
-                    [ Element.text "Error! Can't play music. :((" ]
-                , Decode.errorToString errors
-                    |> Element.text
-                    |> List.singleton
-                    |> Element.paragraph
-                        [ padding 70
-                        , Font.family
-                            [ Font.typeface "Courier New" ]
-                        ]
-                ]
+            el
+                [ width (fillPortion 2) ]
+            <|
+                errorView "Cannot view picture :(" errors
 
         Ok music ->
             musicViewSuccess music
@@ -71,9 +63,9 @@ musicView model =
 musicViewSuccess : Music -> Element Msg
 musicViewSuccess music =
     column
-        [ width (Element.fillPortion 2)
+        [ width (fillPortion 2)
         , height fill
-        , Element.spacing 40
+        , spacing 40
         , padding 40
         ]
         [ soundToggle music
@@ -85,17 +77,17 @@ soundToggle : Music -> Element Msg
 soundToggle music =
     let
         iconWrapper icon =
-            Element.el
-                [ Element.centerX
-                , Element.centerY
+            el
+                [ centerX
+                , centerY
                 , Font.size 150
                 , Events.onClick ToggleMusic
                 , pointer
-                , Element.mouseDown [ Font.color Colors.light ]
+                , mouseDown [ Font.color Colors.light ]
                 ]
                 (Icon.view icon)
     in
-    Element.el
+    el
         [ height (fillPortion 2)
         , width fill
         ]
@@ -114,10 +106,37 @@ soundToggle music =
 
 radio : Music -> Element Msg
 radio music =
-    Element.column
+    column
         [ width fill
         , height (fillPortion 3)
         ]
         [ Modules.songDescription music
         , Modules.skipButtons music
+        ]
+
+
+
+-- helpers
+
+
+errorView : String -> Decode.Error -> Element Msg
+errorView awwMan errors =
+    column
+        [ height fill
+        , spacing 40
+        ]
+        [ paragraph
+            [ Font.size 70
+            , Font.bold
+            , Font.center
+            ]
+            [ text awwMan ]
+        , Decode.errorToString errors
+            |> text
+            |> List.singleton
+            |> paragraph
+                [ padding 70
+                , Font.family
+                    [ Font.typeface "Courier New" ]
+                ]
         ]

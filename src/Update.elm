@@ -4,6 +4,7 @@ import Element exposing (classifyDevice)
 import Json.Decode as Decode
 import Music as Music exposing (FromJsSongPackage, Music, MusicState(..), ToJsSongPackage)
 import Parser
+import Picture exposing (Picture, Pictures, ToJsPicPackage)
 import Ports
 import Types exposing (Model, Msg(..))
 
@@ -24,9 +25,6 @@ update msg model =
                     , toggleMusicPort (Music.toggle music.state)
                     )
                 )
-
-        ChangePicture ->
-            ( model, Cmd.none )
 
         -- request a new song
         GetNewSong ->
@@ -50,6 +48,14 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        ChangePicture ->
+            requestPic Ports.getPicture model
+
+        GotPicture package ->
+            ( { model | pictures = model.pictures |> Result.andThen (updatePicture package) }
+            , Cmd.none
+            )
+
 
 requestSong : (ToJsSongPackage -> Cmd msg) -> Model -> ( Model, Cmd msg )
 requestSong portRequest model =
@@ -72,6 +78,33 @@ requestSong portRequest model =
                                 music.songs
                     in
                     portRequest toJsSongPackage
+
+                _ ->
+                    Cmd.none
+    in
+    ( model, cmd )
+
+
+requestPic : (ToJsPicPackage -> Cmd msg) -> Model -> ( Model, Cmd msg )
+requestPic portRequest model =
+    let
+        cmd =
+            case
+                ( model.pictures
+                    |> Result.toMaybe
+                    |> Maybe.andThen .currentPic
+                    |> Debug.log "bruh"
+                , model.pictures
+                )
+            of
+                ( Just currentPic, Ok pictures ) ->
+                    let
+                        toJsPicPackage =
+                            ToJsPicPackage
+                                currentPic
+                                pictures.allPics
+                    in
+                    portRequest toJsPicPackage
 
                 _ ->
                     Cmd.none
@@ -140,3 +173,14 @@ toggleMusicPort music =
 
         On ->
             Ports.toggleMusic True
+
+
+updatePicture : Decode.Value -> Pictures -> Result Decode.Error Pictures
+updatePicture jsonValue pics =
+    let
+        package =
+            Parser.toPic jsonValue
+    in
+    Result.map
+        (\p -> { pics | currentPic = Just p })
+        package

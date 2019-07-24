@@ -1,13 +1,16 @@
-module Parser exposing (keyDecoder, songPackageFromJson, songsFromJson)
+module Parser exposing (keyDecoder, picturesFromJson, songPackageFromJson, songsFromJson, toPic)
 
-{-| Parses the music in songs.json
-And parses FromJsSongPackages which are a Decode.Value
-also parses keypresses
+{-| Parses:
+the music in songs.json
+pictures in pictures.json
+FromJsSongPackages which are a Decode.Value
+keypresses which are also a Decode.Value
 -}
 
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (required)
-import Music as Music exposing (FromJsSongPackage, Song)
+import Music exposing (FromJsSongPackage, Song)
+import Picture exposing (Picture)
 
 
 
@@ -17,6 +20,43 @@ import Music as Music exposing (FromJsSongPackage, Song)
 
 keyDecoder =
     Decode.field "key" Decode.string
+
+
+
+-- decode pictures
+
+
+picturesFromJson : Decode.Value -> Result Decode.Error (List Picture)
+picturesFromJson jsonString =
+    decodeValue string jsonString
+        |> Result.andThen toPics
+
+
+toPics : String -> Result Decode.Error (List Picture)
+toPics jsonString =
+    decodeString
+        (Decode.list picDecoder)
+        jsonString
+
+
+picDecoder : Decoder Picture
+picDecoder =
+    succeed Picture
+        |> required "src" string
+        |> required "id" string
+
+
+
+-- decode 1 picture
+
+
+toPic : Decode.Value -> Result Decode.Error Picture
+toPic jsonString =
+    decodeValue string jsonString
+        |> Result.andThen
+            (decodeString
+                picDecoder
+            )
 
 
 

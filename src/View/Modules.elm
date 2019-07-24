@@ -12,6 +12,7 @@ import Element.Font as Font
 import FontAwesome.Layering as Layering
 import FontAwesome.Solid
 import Music exposing (Music)
+import Picture exposing (Pictures)
 import Types exposing (Model, Msg(..))
 import UiUtils.Colors as Colors
 import UiUtils.Icon as Icon exposing (Icon)
@@ -21,21 +22,37 @@ import UiUtils.Icon as Icon exposing (Icon)
 -- PICTURE --
 
 
-picture : Model -> Element Msg
-picture model =
+picture : Pictures -> Element Msg
+picture picData =
     Element.el
         [ Border.rounded 20
         , Border.solid
         , Border.width 22
         , Border.color Colors.lightBlue
-        , Background.image model.image
         , width fill
         , height fill
         , pointer
         , Element.mouseDown [ Border.color Colors.light ]
         , Events.onClick ChangePicture
         ]
-        Element.none
+    <|
+        case picData.currentPic of
+            Just pic ->
+                Element.el
+                    [ Background.image pic.src
+                    , width fill
+                    , height fill
+                    ]
+                    Element.none
+
+            Nothing ->
+                Element.el
+                    [ centerX
+                    , centerY
+                    , width fill
+                    , height fill
+                    ]
+                    (Element.text "bruh")
 
 
 

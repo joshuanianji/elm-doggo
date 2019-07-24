@@ -19,6 +19,7 @@ subscriptions model =
         -- because we need the type on songEnded to be () -> Msg
         , Ports.songEnded (\_ -> GetNewSong)
 
-        -- space bar pauses music. We need to dec
+        -- space bar pauses music. We need to decode the spacebar though rip.
         , Browser.Events.onKeyDown (Decode.map KeyPressed keyDecoder)
+        , Ports.gotPicture GotPicture
         ]

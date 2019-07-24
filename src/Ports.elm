@@ -1,9 +1,25 @@
-port module Ports exposing (getFirstSong, getNewSong, getPreviousSong, nextSong, playMusic, songEnded, toggleMusic)
+port module Ports exposing
+    ( getFirstSong
+    , getNewSong
+    , getPicture
+    , getPreviousSong
+    , gotInitPictures
+    , gotPicture
+    , nextSong
+    , playMusic
+    , songEnded
+    , toggleMusic
+    )
 
 -- my first time using ports!!
 
 import Json.Decode
 import Music exposing (FromJsSongPackage, Song, ToJsSongPackage)
+import Picture exposing (Picture, Pictures, ToJsPicPackage)
+
+
+
+-- MUSIC --
 
 
 {-| The boolean is defined as follows:
@@ -59,3 +75,16 @@ port nextSong : (Json.Decode.Value -> msg) -> Sub msg
 
 
 port songEnded : (Bool -> msg) -> Sub msg
+
+
+
+-- PICTURES --
+
+
+port gotInitPictures : List Picture -> Cmd msg
+
+
+port getPicture : ToJsPicPackage -> Cmd msg
+
+
+port gotPicture : (Json.Decode.Value -> msg) -> Sub msg

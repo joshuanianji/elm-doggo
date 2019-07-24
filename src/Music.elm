@@ -3,10 +3,6 @@ module Music exposing (FromJsSongPackage, Music, MusicState(..), Song, ToJsSongP
 {-| How I handle Music
 -}
 
-import Json.Decode as Decode
-
-
-
 -- I include previous songs so I can go back.
 
 

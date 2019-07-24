@@ -39,7 +39,7 @@
             return result;
         }
         songsJson = loadFile("src/songs.json");
-        console.log(songsJson);
+        picturesJson = loadFile('src/pictures.json')
 
         var app = Elm.Main.init({
             node: document.getElementById('elm'),
@@ -48,7 +48,8 @@
                     width: window.innerWidth,
                     height: window.innerHeight
                 },
-                songsJson: songsJson
+                songsJson: songsJson,
+                picturesJson: picturesJson
             }
         })
 
@@ -133,7 +134,6 @@
             // stringify the data so elm can JSON decode it and it will be safer to use.
             stringPackage = JSON.stringify(toElmSongPackage);
             console.log("what we send over nextSong: " + stringPackage);
-            console.log(typeof stringPackage);
             app.ports.nextSong.send(stringPackage);
         })
 
@@ -191,8 +191,33 @@
                 app.ports.songEnded.send(false)
             };
 
-
         });
+
+        // pick a random song and send it over
+        app.ports.gotInitPictures.subscribe(function (pics) {
+            var randPic = randItem(pics);
+
+            var package = JSON.stringify(randPic);
+            console.log("init picture: " + package);
+            app.ports.gotPicture.send(package);
+        });
+
+        app.ports.getPicture.subscribe(function (package) {
+            currentPic = package.currentPic;
+            pics = package.allPics;
+
+
+            var randPic = randItem(pics);
+            while (currentPic.id == randPic.id) {
+                //make sure we don't get a duplicate
+                randPic = randItem(pics);
+            }
+            package = JSON.stringify(randPic);
+
+            console.log("sending over " + package)
+            app.ports.gotPicture.send(package);
+
+        })
     </script>
 </body>
 

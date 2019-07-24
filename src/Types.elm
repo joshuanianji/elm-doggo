@@ -4,13 +4,14 @@ import Element exposing (Device, classifyDevice)
 import Json.Decode as Decode
 import Music exposing (..)
 import Parser
+import Picture exposing (Picture, Pictures)
 import Ports
 
 
 type alias Model =
     { device : Device
-    , image : String
     , music : Result Decode.Error Music
+    , pictures : Result Decode.Error Pictures
     }
 
 
@@ -22,6 +23,7 @@ type alias Model =
 type alias Flags =
     { windowSize : WindowSize
     , songsJson : Decode.Value
+    , picturesJson : Decode.Value
     }
 
 
@@ -38,24 +40,32 @@ type alias WindowSize =
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
-        cmd =
+        cmdSongs =
             case Parser.songsFromJson flags.songsJson of
                 Ok songs ->
                     Ports.getFirstSong songs
 
                 Err _ ->
                     Cmd.none
+
+        cmdPics =
+            case Debug.log "pics" <| Parser.picturesFromJson flags.picturesJson of
+                Ok pictures ->
+                    Ports.gotInitPictures pictures
+
+                Err _ ->
+                    Cmd.none
     in
     ( initModel flags
-    , cmd
+    , Cmd.batch [ cmdSongs, cmdPics ]
     )
 
 
 initModel : Flags -> Model
 initModel flags =
     { device = classifyDevice flags.windowSize
-    , image = "https://cdn1.medicalnewstoday.com/content/images/articles/322/322868/golden-retriever-puppy.jpg"
     , music = flags.songsJson |> Parser.songsFromJson |> Result.map Music.init
+    , pictures = flags.picturesJson |> Parser.picturesFromJson |> Result.map Picture.init
     }
 
 
@@ -71,3 +81,4 @@ type Msg
     | ToggleMusic
     | ChangePicture
     | KeyPressed String
+    | GotPicture Decode.Value
