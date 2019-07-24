@@ -23,7 +23,6 @@ view model =
     row
         [ width fill
         , height fill
-        , Element.padding 40
         ]
         [ pictureView model
         , musicView model
@@ -35,6 +34,7 @@ pictureView model =
     Element.el
         [ width (Element.fillPortion 2)
         , height fill
+        , padding 40
         ]
         (Modules.picture model)
 
@@ -46,10 +46,10 @@ musicView model =
             Element.column
                 [ width (Element.fillPortion 2)
                 , height fill
-                , Element.spacing 50
+                , Element.spacing 40
                 ]
                 [ Element.paragraph
-                    [ Font.size 40
+                    [ Font.size 70
                     , Font.bold
                     , Font.center
                     ]
@@ -58,7 +58,7 @@ musicView model =
                     |> Element.text
                     |> List.singleton
                     |> Element.paragraph
-                        [ padding 30
+                        [ padding 70
                         , Font.family
                             [ Font.typeface "Courier New" ]
                         ]
@@ -73,7 +73,8 @@ musicViewSuccess music =
     column
         [ width (Element.fillPortion 2)
         , height fill
-        , Element.spacing 50
+        , Element.spacing 40
+        , padding 40
         ]
         [ soundToggle music
         , radio music
