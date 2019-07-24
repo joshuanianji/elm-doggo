@@ -1,4 +1,4 @@
-module View.Modules exposing (Align(..), goBack, goForward, nowPlaying, picture, skipButton, skipButtons, songDescription, songName)
+module View.Modules exposing (Align(..), goBack, goForward, nowPlaying, picture, skipButtons, songDescription, songName)
 
 {-| There are key similarities between the view functions of the Portrait and Landscape,
 such as the design of the Radio and the picture.
@@ -9,6 +9,7 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
+import FontAwesome.Layering as Layering
 import FontAwesome.Solid
 import Music exposing (Music)
 import Types exposing (Model, Msg(..))
@@ -99,30 +100,46 @@ credit music =
                             ++ ")"
 
 
-skipButtons : Element Msg
-skipButtons =
+skipButtons : Music -> Element Msg
+skipButtons music =
     row
         [ width fill
         , height fill
         , centerX
         ]
-        [ goBack
-        , goForward
+        [ goBack music
+        , goForward music
         ]
 
 
-goBack : Element Msg
-goBack =
-    skipButton Right GetPreviousSong FontAwesome.Solid.angleDoubleLeft
+goBack : Music -> Element Msg
+goBack music =
+    if List.length music.previousSongs == 0 then
+        Element.el
+            [ width fill, height fill ]
+            Element.none
+
+    else
+        buttonWrapper GetPreviousSong (Icon.view FontAwesome.Solid.angleDoubleLeft)
 
 
-goForward : Element Msg
-goForward =
-    skipButton Left GetNewSong FontAwesome.Solid.angleDoubleRight
+goForward : Music -> Element Msg
+goForward music =
+    if List.length music.nextSongs == 0 then
+        buttonWrapper GetNewSong (Icon.view FontAwesome.Solid.angleDoubleRight)
+
+    else
+        buttonWrapper GetNewSong
+            (Icon.withLayer
+                { string = String.fromInt <| List.length music.nextSongs
+                , textColor = Colors.dark
+                , mainIcon = FontAwesome.Solid.angleDoubleRight
+                }
+            )
 
 
-skipButton : Align -> Msg -> Icon -> Element Msg
-skipButton align onClickEvent icon =
+buttonWrapper : Msg -> Element Msg -> Element Msg
+buttonWrapper msg icon =
     Element.el
         [ width fill, height fill ]
     <|
@@ -132,9 +149,9 @@ skipButton align onClickEvent icon =
             , Font.size 150
             , pointer
             , Element.mouseDown [ Font.color Colors.light ]
-            , Events.onClick onClickEvent
+            , Events.onClick msg
             ]
-            (Icon.view icon)
+            icon
 
 
 type Align

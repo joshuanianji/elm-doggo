@@ -70,4 +70,4 @@ type Msg
     | GotSong Decode.Value -- Javascript returns to us data for a new song
     | ToggleMusic
     | ChangePicture
-    | NoOp
+    | KeyPressed String

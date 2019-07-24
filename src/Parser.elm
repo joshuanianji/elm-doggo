@@ -1,12 +1,22 @@
-module Parser exposing (songPackageFromJson, songsFromJson)
+module Parser exposing (keyDecoder, songPackageFromJson, songsFromJson)
 
 {-| Parses the music in songs.json
 And parses FromJsSongPackages which are a Decode.Value
+also parses keypresses
 -}
 
 import Json.Decode as Decode exposing (..)
 import Json.Decode.Pipeline exposing (required)
 import Music as Music exposing (FromJsSongPackage, Song)
+
+
+
+-- decode Keys
+-- just returns string of what the user inputted. a spacebar will return " "
+
+
+keyDecoder =
+    Decode.field "key" Decode.string
 
 
 

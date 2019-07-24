@@ -17,6 +17,14 @@
         /*
             i would so things like set a global constant to document.getElementById('audio-player') but ill get a 
             'cannot set property _ of null' because I have to wait for it to load or something smh.
+
+
+
+            Here is how I organized my lists
+
+            [ ---  previous songs --- ] ---  current song --- [ --- next songs --- ]
+            So you can see that the END of the previous songs are right beside the current song, which is 
+            right beside the BEGINNING of the next songs.
         
         */
         // load json file and send string via port
@@ -98,16 +106,26 @@
             // move most recent song to the END of the array
             previousSongs.push(currentSong);
 
-            var randSong = randItem(songs);
-            while (currentSong.name == randSong.name) {
-                //make sure we don't get a duplicate
-                randSong = randItem(songs)
+            // if there are songs in the current song then we just get the newest one
+            if (nextSongs.length > 0) {
+                // remove first song and returns it into currentSong
+                currentSong = nextSongs.shift();
+            } else {
+                // else get new song
+                var randSong = randItem(songs);
+                while (currentSong.name == randSong.name) {
+                    //make sure we don't get a duplicate
+                    randSong = randItem(songs);
+                }
+                currentSong = randSong;
             }
-            console.log("going to play " + JSON.stringify(randSong))
+
+
+            console.log("going to play " + JSON.stringify(currentSong));
 
             // making data presentable to elm lmao.
             toElmSongPackage = {
-                currentSong: randSong,
+                currentSong: currentSong,
                 previousSongs: previousSongs,
                 nextSongs: nextSongs
             }
@@ -120,7 +138,7 @@
         })
 
         app.ports.getPreviousSong.subscribe(function (songPackage) {
-            // lmao literally going to copy the netNextSong function
+            // lmao literally going to copy the getNewSong function
 
             currentSong = songPackage.currentSong;
             songs = songPackage.allSongs;

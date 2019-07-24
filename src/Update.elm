@@ -42,8 +42,13 @@ update msg model =
             , Ports.playMusic ()
             )
 
-        NoOp ->
-            ( model, Cmd.none )
+        KeyPressed value ->
+            case value of
+                " " ->
+                    update ToggleMusic model
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 requestSong : (ToJsSongPackage -> Cmd msg) -> Model -> ( Model, Cmd msg )
@@ -107,7 +112,7 @@ updateSongs : Decode.Value -> Music -> Result Decode.Error Music
 updateSongs jsonValue music =
     let
         package =
-            Parser.songPackageFromJson jsonValue |> Debug.log "parsed JsPackage"
+            Parser.songPackageFromJson jsonValue
     in
     Result.map
         (\p ->

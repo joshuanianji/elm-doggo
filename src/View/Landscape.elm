@@ -44,7 +44,10 @@ musicView model =
     case model.music of
         Err errors ->
             Element.column
-                []
+                [ width (Element.fillPortion 2)
+                , height fill
+                , Element.spacing 50
+                ]
                 [ Element.paragraph
                     [ Font.size 40
                     , Font.bold
@@ -115,5 +118,5 @@ radio music =
         , height (fillPortion 3)
         ]
         [ Modules.songDescription music
-        , Modules.skipButtons
+        , Modules.skipButtons music
         ]
