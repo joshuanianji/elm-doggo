@@ -1,4 +1,4 @@
-module View.Landscape exposing (musicView, pictureView, view)
+module View.Landscape exposing (view)
 
 {-| Displays the picture beside the radio (audio controls)
 -}
@@ -10,7 +10,6 @@ import Element.Events as Events
 import Element.Font as Font
 import FontAwesome.Solid
 import Html
-import Json.Decode as Decode
 import Music exposing (Music)
 import Types exposing (Model, Msg(..))
 import UiUtils.Colors as Colors
@@ -44,7 +43,7 @@ pictureView model =
             el
                 [ width (fillPortion 3) ]
             <|
-                errorView "Cannot view picture :(" errors
+                Modules.errorView "Cannot view picture :(" errors
 
 
 musicView : Model -> Element Msg
@@ -54,7 +53,7 @@ musicView model =
             el
                 [ width (fillPortion 2) ]
             <|
-                errorView "Cannot view picture :(" errors
+                Modules.errorView "Cannot play music :(" errors
 
         Ok music ->
             musicViewSuccess music
@@ -68,36 +67,19 @@ musicViewSuccess music =
         , spacing 40
         , padding 40
         ]
-        [ soundToggle music
+        [ musicToggle music
         , radio music
         ]
 
 
-soundToggle : Music -> Element Msg
-soundToggle music =
-    let
-        iconWrapper icon =
-            el
-                [ centerX
-                , centerY
-                , Font.size 150
-                , Events.onClick ToggleMusic
-                , pointer
-                , mouseDown [ Font.color Colors.light ]
-                ]
-                (Icon.view icon)
-    in
+musicToggle : Music -> Element Msg
+musicToggle music =
     el
         [ height (fillPortion 2)
         , width fill
         ]
     <|
-        case music.state of
-            Music.On ->
-                iconWrapper FontAwesome.Solid.pause
-
-            Music.Off ->
-                iconWrapper FontAwesome.Solid.play
+        Modules.playPause music
 
 
 
@@ -111,32 +93,17 @@ radio music =
         , height (fillPortion 3)
         ]
         [ Modules.songDescription music
-        , Modules.skipButtons music
+        , skipButtons music
         ]
 
 
-
--- helpers
-
-
-errorView : String -> Decode.Error -> Element Msg
-errorView awwMan errors =
-    Element.column
-        [ height fill
-        , Element.spacing 40
+skipButtons : Music -> Element Msg
+skipButtons music =
+    row
+        [ width fill
+        , height fill
+        , centerX
         ]
-        [ Element.paragraph
-            [ Font.size 70
-            , Font.bold
-            , Font.center
-            ]
-            [ Element.text awwMan ]
-        , Decode.errorToString errors
-            |> Element.text
-            |> List.singleton
-            |> Element.paragraph
-                [ Element.padding 70
-                , Font.family
-                    [ Font.typeface "Courier New" ]
-                ]
+        [ Modules.goBack music
+        , Modules.goForward music
         ]
