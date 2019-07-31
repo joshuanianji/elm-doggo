@@ -3,7 +3,7 @@ module Types exposing (Flags, Model, Msg(..), WindowSize, init, initModel)
 import Element exposing (Device, classifyDevice)
 import Json.Decode as Decode
 import Music exposing (..)
-import Parser
+import Convertor
 import Picture exposing (Picture, Pictures)
 import Ports
 
@@ -41,7 +41,7 @@ init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         cmdSongs =
-            case Parser.songsFromJson flags.songsJson of
+            case Convertor.songsFromJson flags.songsJson of
                 Ok songs ->
                     Ports.getFirstSong songs
 
@@ -49,7 +49,7 @@ init flags =
                     Cmd.none
 
         cmdPics =
-            case Debug.log "pics" <| Parser.picturesFromJson flags.picturesJson of
+            case Debug.log "pics" <| Convertor.picturesFromJson flags.picturesJson of
                 Ok pictures ->
                     Ports.gotInitPictures pictures
 
@@ -64,8 +64,8 @@ init flags =
 initModel : Flags -> Model
 initModel flags =
     { device = classifyDevice flags.windowSize
-    , music = flags.songsJson |> Parser.songsFromJson |> Result.map Music.init
-    , pictures = flags.picturesJson |> Parser.picturesFromJson |> Result.map Picture.init
+    , music = flags.songsJson |> Convertor.songsFromJson |> Result.map Music.init
+    , pictures = flags.picturesJson |> Convertor.picturesFromJson |> Result.map Picture.init
     }
 
 

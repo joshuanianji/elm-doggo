@@ -1,8 +1,9 @@
-module Picture exposing (Picture, Pictures, ToJsPicPackage, init)
+module Picture exposing (PicType(..), Picture, Pictures, ToJsPicPackage, init)
 
 {-| How I handle Pictures
 
     This is much simpler than Music because I'm not implementing backtracking and stuff
+    Also pretty funny because I'm also handling videos with this but I'm calling it pictures lol.
 
 -}
 
@@ -26,6 +27,15 @@ type alias Picture =
     { src : String
     , id : String
     }
+
+
+
+-- used by parser and stuff
+
+
+type PicType
+    = Image
+    | Video
 
 
 

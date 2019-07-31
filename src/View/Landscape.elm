@@ -34,7 +34,7 @@ pictureView model =
     case model.pictures of
         Ok pictures ->
             el
-                [ width (fillPortion 2)
+                [ width (fillPortion 3)
                 , height fill
                 , padding 40
                 ]
@@ -42,7 +42,7 @@ pictureView model =
 
         Err errors ->
             el
-                [ width (fillPortion 2) ]
+                [ width (fillPortion 3) ]
             <|
                 errorView "Cannot view picture :(" errors
 
@@ -121,21 +121,21 @@ radio music =
 
 errorView : String -> Decode.Error -> Element Msg
 errorView awwMan errors =
-    column
+    Element.column
         [ height fill
-        , spacing 40
+        , Element.spacing 40
         ]
-        [ paragraph
+        [ Element.paragraph
             [ Font.size 70
             , Font.bold
             , Font.center
             ]
-            [ text awwMan ]
+            [ Element.text awwMan ]
         , Decode.errorToString errors
-            |> text
+            |> Element.text
             |> List.singleton
-            |> paragraph
-                [ padding 70
+            |> Element.paragraph
+                [ Element.padding 70
                 , Font.family
                     [ Font.typeface "Courier New" ]
                 ]

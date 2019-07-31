@@ -4,15 +4,19 @@ module View.Modules exposing (Align(..), goBack, goForward, nowPlaying, picture,
 such as the design of the Radio and the picture.
 -}
 
-import Element exposing (Element, centerX, centerY, fill, height, pointer, row, width)
+import Convertor
+import Element exposing (Element, centerX, centerY, fill, height, pointer, row, shrink, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import FontAwesome.Layering as Layering
 import FontAwesome.Solid
+import Html
+import Html.Attributes
+import Json.Encode
 import Music exposing (Music)
-import Picture exposing (Pictures)
+import Picture exposing (PicType(..), Pictures)
 import Types exposing (Model, Msg(..))
 import UiUtils.Colors as Colors
 import UiUtils.Icon as Icon exposing (Icon)
@@ -38,12 +42,37 @@ picture picData =
     <|
         case picData.currentPic of
             Just pic ->
-                Element.el
-                    [ Background.image pic.src
-                    , width fill
-                    , height fill
-                    ]
-                    Element.none
+                case Convertor.getPicType pic.src of
+                    Ok Image ->
+                        Element.el
+                            [ Background.image pic.src
+                            , width fill
+                            , height fill
+                            ]
+                            Element.none
+
+                    Ok Video ->
+                        Element.el
+                            [ width fill
+                            , height fill
+                            , centerX
+                            , centerY
+                            ]
+                        <|
+                            displayVideo pic.src
+
+                    Err errors ->
+                        Element.el
+                            [ width fill
+                            , height fill
+                            ]
+                        <|
+                            Element.paragraph
+                                []
+                                [ Element.text pic.id
+                                , Element.text " is in an unrecognized format! We cannot play this file."
+                                , Element.text (Debug.toString errors)
+                                ]
 
             Nothing ->
                 Element.el
@@ -52,7 +81,31 @@ picture picData =
                     , width fill
                     , height fill
                     ]
-                    (Element.text "bruh")
+                    (Element.text "Loading....")
+
+
+
+-- lmao we need Json encoding for html properties? Wack stuff
+
+
+displayVideo : String -> Element Msg
+displayVideo url =
+    Element.html <|
+        Html.video
+            [ Html.Attributes.autoplay True
+            , Html.Attributes.controls False
+            , Html.Attributes.property "muted" (Json.Encode.bool True)
+            , Html.Attributes.style "max-height" "100%"
+            , Html.Attributes.style "max-width" "100%"
+            ]
+            [ Html.source
+                [ Html.Attributes.src url
+                , Html.Attributes.type_ "video/mp4"
+                , Html.Attributes.style "max-height" "100%"
+                , Html.Attributes.style "max-width" "100%"
+                ]
+                []
+            ]
 
 
 

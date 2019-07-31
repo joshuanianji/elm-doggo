@@ -1,9 +1,9 @@
 module Update exposing (update)
 
+import Convertor
 import Element exposing (classifyDevice)
 import Json.Decode as Decode
 import Music as Music exposing (FromJsSongPackage, Music, MusicState(..), ToJsSongPackage)
-import Parser
 import Picture exposing (Picture, Pictures, ToJsPicPackage)
 import Ports
 import Types exposing (Model, Msg(..))
@@ -145,7 +145,7 @@ updateSongs : Decode.Value -> Music -> Result Decode.Error Music
 updateSongs jsonValue music =
     let
         package =
-            Parser.songPackageFromJson jsonValue
+            Convertor.songPackageFromJson jsonValue
     in
     Result.map
         (\p ->
@@ -179,7 +179,7 @@ updatePicture : Decode.Value -> Pictures -> Result Decode.Error Pictures
 updatePicture jsonValue pics =
     let
         package =
-            Parser.toPic jsonValue
+            Convertor.toPic jsonValue
     in
     Result.map
         (\p -> { pics | currentPic = Just p })

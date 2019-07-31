@@ -1,8 +1,8 @@
 module Subscriptions exposing (subscriptions)
 
 import Browser.Events
+import Convertor exposing (keyDecoder)
 import Json.Decode as Decode
-import Parser exposing (keyDecoder)
 import Ports
 import Types exposing (Model, Msg(..), WindowSize)
 
