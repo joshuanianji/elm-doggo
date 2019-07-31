@@ -1,6 +1,6 @@
 module View exposing (view)
 
-import Element exposing (DeviceClass(..), Element)
+import Element exposing (Element, Orientation(..))
 import Element.Background as Background
 import Element.Font as Font
 import FontAwesome.Styles
@@ -9,6 +9,7 @@ import Html.Attributes as Attr
 import Types exposing (Model, Msg(..))
 import UiUtils.Colors as Colors
 import View.Landscape as Landscape
+import View.Portrait as Portrait
 
 
 
@@ -53,15 +54,9 @@ audio model =
 
 page : Model -> Element Msg
 page model =
-    case model.device.class of
-        Phone ->
+    case model.device.orientation of
+        Landscape ->
             Landscape.view model
 
-        Tablet ->
-            Landscape.view model
-
-        Desktop ->
-            Landscape.view model
-
-        BigDesktop ->
-            Landscape.view model
+        Portrait ->
+            Portrait.view model

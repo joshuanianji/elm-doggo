@@ -33,7 +33,7 @@ pictureView model =
     case model.pictures of
         Ok pictures ->
             el
-                [ width (fillPortion 3)
+                [ width <| fillPortion 3
                 , height fill
                 , padding 40
                 ]
@@ -41,7 +41,7 @@ pictureView model =
 
         Err errors ->
             el
-                [ width (fillPortion 3) ]
+                [ width <| fillPortion 3 ]
             <|
                 Modules.errorView "Cannot view picture :(" errors
 
@@ -51,7 +51,7 @@ musicView model =
     case model.music of
         Err errors ->
             el
-                [ width (fillPortion 2) ]
+                [ width <| fillPortion 2 ]
             <|
                 Modules.errorView "Cannot play music :(" errors
 
@@ -62,7 +62,7 @@ musicView model =
 musicViewSuccess : Music -> Element Msg
 musicViewSuccess music =
     column
-        [ width (fillPortion 2)
+        [ width <| fillPortion 2
         , height fill
         , spacing 40
         , padding 40
@@ -75,7 +75,7 @@ musicViewSuccess music =
 musicToggle : Music -> Element Msg
 musicToggle music =
     el
-        [ height (fillPortion 2)
+        [ height <| fillPortion 2
         , width fill
         ]
     <|
@@ -90,7 +90,7 @@ radio : Music -> Element Msg
 radio music =
     column
         [ width fill
-        , height (fillPortion 3)
+        , height <| fillPortion 3
         ]
         [ Modules.songDescription music
         , skipButtons music
