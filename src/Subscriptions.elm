@@ -1,7 +1,6 @@
 module Subscriptions exposing (subscriptions)
 
 import Browser.Events
-import Convertor exposing (keyDecoder)
 import Json.Decode as Decode
 import Ports
 import Types exposing (Model, Msg(..), WindowSize)
@@ -14,12 +13,19 @@ subscriptions model =
             (\x y ->
                 WindowResize (WindowSize x y)
             )
-        , Ports.nextSong GotSong
 
         -- because we need the type on songEnded to be () -> Msg
-        , Ports.songEnded (\_ -> GetNewSong)
+        , Ports.songEnded (\_ -> RequestNewSong)
 
         -- space bar pauses music. We need to decode the spacebar though rip.
         , Browser.Events.onKeyDown (Decode.map KeyPressed keyDecoder)
-        , Ports.gotPicture GotPicture
         ]
+
+
+
+-- decode Keys
+-- just returns string of what the user inputted. a spacebar will return " "
+
+
+keyDecoder =
+    Decode.field "key" Decode.string

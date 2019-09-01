@@ -1,12 +1,11 @@
 module Update exposing (update)
 
-import Convertor
 import Element exposing (classifyDevice)
 import Json.Decode as Decode
-import Music as Music exposing (FromJsSongPackage, Music, MusicState(..), ToJsSongPackage)
-import Picture exposing (Picture, Pictures, ToJsPicPackage)
+import Music
 import Ports
 import Types exposing (Model, Msg(..))
+import Visual
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -17,44 +16,80 @@ update msg model =
             , Cmd.none
             )
 
-        ToggleMusic ->
-            musicUpdate model
-                (\music ->
-                    ( { music | state = Music.toggle music.state }
-                      -- toggle music port for the state the music is going to be in
-                    , toggleMusicPort (Music.toggle music.state)
-                    )
-                )
+        ToggleMusic currState ->
+            let
+                updateMusic music =
+                    { music | state = Music.toggle currState }
+            in
+            ( { model | music = Result.map updateMusic model.music }
+            , case currState of
+                Music.Off ->
+                    Ports.toggleMusic False
 
-        -- request a new song
-        GetNewSong ->
-            requestSong Ports.getNewSong model
+                Music.On ->
+                    Ports.toggleMusic True
+            )
 
-        -- requests a previous song
-        GetPreviousSong ->
-            requestSong Ports.getPreviousSong model
+        RequestNewSong ->
+            ( model
+            , case model.music of
+                Ok m ->
+                    Music.newSong GotSong m
 
-        -- once we got a new song, and play the music again.
-        GotSong package ->
-            ( { model | music = model.music |> Result.andThen (updateSongs package) }
+                _ ->
+                    Cmd.none
+            )
+
+        RequestPreviousSong ->
+            ( model
+            , case model.music of
+                Ok m ->
+                    Music.previousSong GotSong m
+
+                _ ->
+                    Cmd.none
+            )
+
+        -- once we got a song, and play the music again.
+        GotSong music ->
+            ( { model | music = Ok music }
             , Ports.playMusic ()
+            )
+
+        RequestNewVisual ->
+            ( model
+            , case model.visuals of
+                Ok v ->
+                    Visual.newVisual GotVisual v
+
+                _ ->
+                    Cmd.none
+            )
+
+        GotVisual visuals ->
+            ( { model | visuals = Ok visuals }
+            , Cmd.none
             )
 
         KeyPressed value ->
             case value of
                 " " ->
-                    update ToggleMusic model
+                    case model.music of
+                        Ok m ->
+                            update (ToggleMusic m.state) model
+
+                        _ ->
+                            ( model, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
 
-        ChangePicture ->
-            requestPic Ports.getPicture model
 
-        GotPicture package ->
-            ( { model | pictures = model.pictures |> Result.andThen (updatePicture package) }
-            , Cmd.none
-            )
+
+-----------------------------
+-- OLD CODE (gonna delete ;))
+-----------------------------
+{--
 
 
 requestSong : (ToJsSongPackage -> Cmd msg) -> Model -> ( Model, Cmd msg )
@@ -135,7 +170,7 @@ musicUpdate model converter =
     Double yikes but I wanna get this done lol
     Also this is useful for Result.andThen because i love monads weeeee
 
-    Anyways when we recieve the new data JS sends us when the user skips a song,
+    Anyways when we receive the new data JS sends us when the user skips a song,
     we convert it to FromJsonSongPackage type which may or may not work.
     Sincs model.music is already a result type we can easily implement Maybe.andThen to
     make our code nice!
@@ -184,3 +219,4 @@ updatePicture jsonValue pics =
     Result.map
         (\p -> { pics | currentPic = Just p })
         package
+--}

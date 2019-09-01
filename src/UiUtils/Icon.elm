@@ -35,9 +35,7 @@ withLayer : Options -> Element msg
 withLayer options =
     Layering.layers
         []
-        [ textOverlay
-            options
-            options.string
+        [ textOverlay options options.string
         , Icon.viewIcon options.mainIcon
         ]
         |> html

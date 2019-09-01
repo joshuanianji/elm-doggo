@@ -1,17 +1,16 @@
-module Types exposing (Flags, Model, Msg(..), WindowSize, init, initModel)
+module Types exposing (Flags, Model, Msg(..), WindowSize, init)
 
 import Element exposing (Device, classifyDevice)
 import Json.Decode as Decode
-import Music exposing (..)
-import Convertor
-import Picture exposing (Picture, Pictures)
+import Music exposing (Music, MusicState)
 import Ports
+import Visual exposing (Visuals)
 
 
 type alias Model =
     { device : Device
     , music : Result Decode.Error Music
-    , pictures : Result Decode.Error Pictures
+    , visuals : Result Decode.Error Visuals
     }
 
 
@@ -23,7 +22,7 @@ type alias Model =
 type alias Flags =
     { windowSize : WindowSize
     , songsJson : Decode.Value
-    , picturesJson : Decode.Value
+    , visualsJson : Decode.Value
     }
 
 
@@ -39,34 +38,12 @@ type alias WindowSize =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    let
-        cmdSongs =
-            case Convertor.songsFromJson flags.songsJson of
-                Ok songs ->
-                    Ports.getFirstSong songs
-
-                Err _ ->
-                    Cmd.none
-
-        cmdPics =
-            case Debug.log "pics" <| Convertor.picturesFromJson flags.picturesJson of
-                Ok pictures ->
-                    Ports.gotInitPictures pictures
-
-                Err _ ->
-                    Cmd.none
-    in
-    ( initModel flags
-    , Cmd.batch [ cmdSongs, cmdPics ]
+    ( { device = classifyDevice flags.windowSize
+      , music = Music.init flags.songsJson
+      , visuals = Visual.init flags.visualsJson
+      }
+    , Cmd.none
     )
-
-
-initModel : Flags -> Model
-initModel flags =
-    { device = classifyDevice flags.windowSize
-    , music = flags.songsJson |> Convertor.songsFromJson |> Result.map Music.init
-    , pictures = flags.picturesJson |> Convertor.picturesFromJson |> Result.map Picture.init
-    }
 
 
 
@@ -75,10 +52,10 @@ initModel flags =
 
 type Msg
     = WindowResize WindowSize
-    | GetNewSong -- request a new song
-    | GetPreviousSong -- requests a previous song
-    | GotSong Decode.Value -- Javascript returns to us data for a new song
-    | ToggleMusic
-    | ChangePicture
+    | ToggleMusic MusicState
+    | RequestNewSong
+    | RequestPreviousSong
+    | GotSong Music -- Acts on newly retrieved song
+    | RequestNewVisual
+    | GotVisual Visuals
     | KeyPressed String
-    | GotPicture Decode.Value

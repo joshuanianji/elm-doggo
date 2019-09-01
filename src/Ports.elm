@@ -1,12 +1,5 @@
 port module Ports exposing
-    ( getFirstSong
-    , getNewSong
-    , getPicture
-    , getPreviousSong
-    , gotInitPictures
-    , gotPicture
-    , nextSong
-    , playMusic
+    ( playMusic
     , songEnded
     , toggleMusic
     )
@@ -14,8 +7,8 @@ port module Ports exposing
 -- my first time using ports!!
 
 import Json.Decode
-import Music exposing (FromJsSongPackage, Song, ToJsSongPackage)
-import Picture exposing (Picture, Pictures, ToJsPicPackage)
+import Music exposing (Song)
+import Visual exposing (Visual, Visuals)
 
 
 
@@ -41,50 +34,8 @@ port playMusic : () -> Cmd msg
 
 
 
--- when we initialize the app we only need to get one song from a list of songs
--- . This initializes in the Cmd Msg of our init function
-
-
-port getFirstSong : List Song -> Cmd msg
-
-
-
--- when we request a new song
-
-
-port getNewSong : ToJsSongPackage -> Cmd msg
-
-
-
--- when we request a previous song
-
-
-port getPreviousSong : ToJsSongPackage -> Cmd msg
-
-
-
--- when we get the new song
-
-
-port nextSong : (Json.Decode.Value -> msg) -> Sub msg
-
-
-
 -- javascript will send us this when a song ends, so we can request a new song.
 -- I just put a Bool type because idk how Javascript sends an empty tuple
 
 
 port songEnded : (Bool -> msg) -> Sub msg
-
-
-
--- PICTURES --
-
-
-port gotInitPictures : List Picture -> Cmd msg
-
-
-port getPicture : ToJsPicPackage -> Cmd msg
-
-
-port gotPicture : (Json.Decode.Value -> msg) -> Sub msg

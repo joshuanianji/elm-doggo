@@ -6,6 +6,7 @@
     <meta charset="UTF-8">
     <title>My Most Important Project</title>
     <meta name="description" content="The Best Website">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
     <meta name="author" content="Joshua Ji">
     <script src="helper.js"></script>
 </head>
@@ -38,8 +39,12 @@
             }
             return result;
         }
-        songsJson = loadFile("src/songs.json");
-        picturesJson = loadFile('src/pictures.json')
+        songsJson = JSON.parse(loadFile("src/songs.json"));
+        visualsJson = JSON.parse(loadFile('src/pictures.json'));
+
+        // initialize with first song and picture
+        firstSong = songsJson.splice(Math.floor(Math.random() * songsJson.length), 1)[0];
+        firstVisual = visualsJson.splice(Math.floor(Math.random() * visualsJson.length), 1)[0];
 
         var app = Elm.Main.init({
             node: document.getElementById('elm'),
@@ -48,27 +53,9 @@
                     width: window.innerWidth,
                     height: window.innerHeight
                 },
-                songsJson: songsJson,
-                picturesJson: picturesJson
+                songsJson: JSON.stringify({ current: firstSong, others: songsJson }),
+                visualsJson: JSON.stringify({ current: firstVisual, others: visualsJson })
             }
-        })
-
-
-        app.ports.getFirstSong.subscribe(function (songs) {
-            var randSong = randItem(songs)
-            // pick a random song and send it over 
-            console.log("going to play " + JSON.stringify(randSong))
-
-            toElmSongPackage = {
-                currentSong: randSong,
-                previousSongs: [],
-                nextSongs: []
-            }
-
-            stringPackage = JSON.stringify(toElmSongPackage);
-            console.log("what we send over nextSong: " + stringPackage);
-            console.log(typeof stringPackage);
-            app.ports.nextSong.send(stringPackage);
         })
 
 
@@ -95,73 +82,7 @@
         });
 
 
-        app.ports.getNewSong.subscribe(function (songPackage) {
-            /*
-                Elm sent us an object (ToJsSongPackage, to be precise) which can be looked in more detail
-                in the Music.elm module
-            */
-            currentSong = songPackage.currentSong;
-            songs = songPackage.allSongs;
-            previousSongs = songPackage.previousSongs;
-            nextSongs = songPackage.nextSongs;
-            // move most recent song to the END of the array
-            previousSongs.push(currentSong);
 
-            // if there are songs in the current song then we just get the newest one
-            if (nextSongs.length > 0) {
-                // remove first song and returns it into currentSong
-                currentSong = nextSongs.shift();
-            } else {
-                // else get new song
-                var randSong = randItem(songs);
-                while (currentSong.name == randSong.name) {
-                    //make sure we don't get a duplicate
-                    randSong = randItem(songs);
-                }
-                currentSong = randSong;
-            }
-
-
-            console.log("going to play " + JSON.stringify(currentSong));
-
-            // making data presentable to elm lmao.
-            toElmSongPackage = {
-                currentSong: currentSong,
-                previousSongs: previousSongs,
-                nextSongs: nextSongs
-            }
-
-            // stringify the data so elm can JSON decode it and it will be safer to use.
-            stringPackage = JSON.stringify(toElmSongPackage);
-            console.log("what we send over nextSong: " + stringPackage);
-            app.ports.nextSong.send(stringPackage);
-        })
-
-        app.ports.getPreviousSong.subscribe(function (songPackage) {
-            // lmao literally going to copy the getNewSong function
-
-            currentSong = songPackage.currentSong;
-            songs = songPackage.allSongs;
-            previousSongs = songPackage.previousSongs;
-            nextSongs = songPackage.nextSongs
-
-            // push the current song to the BEGINNING of the array 
-            nextSongs.unshift(currentSong)
-            // pop() removes the last item of the array and also returns it.
-            currentSong = previousSongs.pop();
-
-            // yee haw
-            toElmSongPackage = {
-                currentSong: currentSong,
-                previousSongs: previousSongs,
-                nextSongs: nextSongs
-            }
-
-            stringPackage = JSON.stringify(toElmSongPackage);
-            console.log("what we send over nextSong: " + stringPackage);
-            console.log(typeof stringPackage);
-            app.ports.nextSong.send(stringPackage);
-        })
 
         app.ports.playMusic.subscribe(function () {
             // elm wants us to play the music
@@ -193,31 +114,7 @@
 
         });
 
-        // pick a random song and send it over
-        app.ports.gotInitPictures.subscribe(function (pics) {
-            var randPic = randItem(pics);
 
-            var package = JSON.stringify(randPic);
-            console.log("init picture: " + package);
-            app.ports.gotPicture.send(package);
-        });
-
-        app.ports.getPicture.subscribe(function (package) {
-            currentPic = package.currentPic;
-            pics = package.allPics;
-
-
-            var randPic = randItem(pics);
-            while (currentPic.id == randPic.id) {
-                //make sure we don't get a duplicate
-                randPic = randItem(pics);
-            }
-            package = JSON.stringify(randPic);
-
-            console.log("sending over " + package)
-            app.ports.gotPicture.send(package);
-
-        })
     </script>
 </body>
 

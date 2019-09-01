@@ -41,10 +41,9 @@ audio model =
         [ Html.audio
             [ Attr.src
                 (model.music
-                    |> Result.toMaybe
-                    |> Maybe.andThen .currentSong
-                    |> Maybe.map .source
-                    |> Maybe.withDefault ""
+                    |> Result.map .currentSong
+                    |> Result.map .source
+                    |> Result.withDefault ""
                 )
             , Attr.id "audio-player" -- so the javascript can find it
             ]

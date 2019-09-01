@@ -4,7 +4,6 @@ module View.Modules exposing (Align(..), errorView, goBack, goForward, nowPlayin
 such as the design of the Radio and the picture.
 -}
 
-import Convertor
 import Element exposing (Element, centerX, centerY, el, fill, height, mouseDown, pointer, row, shrink, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -17,72 +16,63 @@ import Html.Attributes
 import Json.Decode
 import Json.Encode
 import Music exposing (Music)
-import Picture exposing (PicType(..), Pictures)
+import Parser exposing ((|.), (|=), Parser)
+import Set
 import Types exposing (Model, Msg(..))
 import UiUtils.Colors as Colors
 import UiUtils.Icon as Icon exposing (Icon)
+import Visual exposing (Visuals)
 
 
 
 -- PICTURE --
 
 
-picture : Pictures -> Element Msg
-picture picData =
+picture : Int -> Visuals -> Element Msg
+picture borderWidth visuals =
     Element.el
         [ Border.rounded 20
         , Border.solid
-        , Border.width 22
+        , Border.width borderWidth
         , Border.color Colors.lightBlue
         , width fill
         , height fill
         , pointer
         , mouseDown [ Border.color Colors.light ]
-        , Events.onClick ChangePicture
+        , Events.onClick RequestNewVisual
         ]
     <|
-        case picData.currentPic of
-            Just pic ->
-                case Convertor.getPicType pic.src of
-                    Ok Image ->
-                        Element.el
-                            [ Background.image pic.src
-                            , width fill
-                            , height fill
-                            ]
-                            Element.none
-
-                    Ok Video ->
-                        Element.el
-                            [ width fill
-                            , height fill
-                            , centerX
-                            , centerY
-                            ]
-                        <|
-                            displayVideo pic.src
-
-                    Err errors ->
-                        Element.el
-                            [ width fill
-                            , height fill
-                            ]
-                        <|
-                            Element.paragraph
-                                []
-                                [ Element.text pic.id
-                                , Element.text " is in an unrecognized format! We cannot play this file."
-                                , Element.text (Debug.toString errors)
-                                ]
-
-            Nothing ->
+        case Parser.run picType visuals.current.src of
+            Ok Image ->
                 Element.el
-                    [ centerX
-                    , centerY
+                    [ Background.image visuals.current.src
                     , width fill
                     , height fill
                     ]
-                    (Element.text "Loading....")
+                    Element.none
+
+            Ok Video ->
+                Element.el
+                    [ width fill
+                    , height fill
+                    , centerX
+                    , centerY
+                    ]
+                <|
+                    displayVideo visuals.current.src
+
+            Err errors ->
+                Element.el
+                    [ width fill
+                    , height fill
+                    ]
+                <|
+                    Element.paragraph
+                        []
+                        [ Element.text visuals.current.id
+                        , Element.text " is in an unrecognized format! We cannot play this file."
+                        , Element.text (Debug.toString errors)
+                        ]
 
 
 
@@ -121,7 +111,7 @@ playPause music =
                 [ centerX
                 , centerY
                 , Font.size 150
-                , Events.onClick ToggleMusic
+                , Events.onClick <| ToggleMusic music.state
                 , pointer
                 , mouseDown [ Font.color Colors.light ]
                 ]
@@ -165,32 +155,21 @@ songName music =
         [ Font.size 20
         , Font.center
         ]
-    <|
-        case music.currentSong of
-            Nothing ->
-                [ Element.text "Cannot play current song! :( Please skip to the next song" ]
-
-            Just song ->
-                [ Element.text song.name ]
+        [ Element.text music.currentSong.name ]
 
 
 credit : Music -> Element Msg
 credit music =
-    case music.currentSong of
-        Nothing ->
-            Element.none
-
-        Just song ->
-            Element.paragraph
-                [ Font.size 18
-                , Font.center
-                ]
-            <|
-                List.singleton <|
-                    Element.text <|
-                        "(Big thonk to "
-                            ++ song.credit
-                            ++ ")"
+    Element.paragraph
+        [ Font.size 18
+        , Font.center
+        ]
+    <|
+        List.singleton <|
+            Element.text <|
+                "(Big thonk to "
+                    ++ music.currentSong.credit
+                    ++ ")"
 
 
 goBack : Music -> Element Msg
@@ -201,16 +180,16 @@ goBack music =
             Element.none
 
     else
-        buttonWrapper GetPreviousSong (Icon.view FontAwesome.Solid.angleDoubleLeft)
+        buttonWrapper RequestPreviousSong (Icon.view FontAwesome.Solid.angleDoubleLeft)
 
 
 goForward : Music -> Element Msg
 goForward music =
     if List.length music.nextSongs == 0 then
-        buttonWrapper GetNewSong (Icon.view FontAwesome.Solid.angleDoubleRight)
+        buttonWrapper RequestNewSong (Icon.view FontAwesome.Solid.angleDoubleRight)
 
     else
-        buttonWrapper GetNewSong
+        buttonWrapper RequestNewSong
             (Icon.withLayer
                 { string = String.fromInt <| List.length music.nextSongs
                 , textColor = Colors.dark
@@ -265,3 +244,54 @@ errorView awwMan errors =
                     [ Font.typeface "Courier New" ]
                 ]
         ]
+
+
+picType : Parser PicType
+picType =
+    isolate
+        |> Parser.andThen
+            (\str ->
+                case str of
+                    "png" ->
+                        Parser.succeed Image
+
+                    "jpg" ->
+                        Parser.succeed Image
+
+                    "mp4" ->
+                        Parser.succeed Video
+
+                    other ->
+                        Parser.problem <| "unknown file type " ++ other
+            )
+
+
+
+-- isolate the file
+
+
+isolate : Parser String
+isolate =
+    Parser.succeed identity
+        |. picId
+        |. Parser.symbol "."
+        |= fileType
+
+
+fileType : Parser String
+fileType =
+    Parser.variable
+        { start = Char.isLower
+        , inner = Char.isAlphaNum
+        , reserved = Set.fromList []
+        }
+
+
+picId : Parser ()
+picId =
+    Parser.chompWhile (\c -> not (c == '.'))
+
+
+type PicType
+    = Image
+    | Video

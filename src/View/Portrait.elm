@@ -30,14 +30,14 @@ view model =
 
 pictureView : Model -> Element Msg
 pictureView model =
-    case model.pictures of
-        Ok pictures ->
+    case model.visuals of
+        Ok visuals ->
             el
                 [ width fill
                 , height <| fillPortion 5
                 , padding 40
                 ]
-                (Modules.picture pictures)
+                (Modules.picture 40 visuals)
 
         Err errors ->
             el
