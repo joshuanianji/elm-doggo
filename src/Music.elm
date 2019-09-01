@@ -108,39 +108,59 @@ previousSong updateMsg music =
 
 newSongGenerator : Music -> Generator Music
 newSongGenerator music =
-    Random.List.choose music.otherSongs
-        |> Random.map
-            (\( maybeSong, listSong ) ->
-                case maybeSong of
-                    Just song ->
-                        { music
-                            | currentSong = song
-                            , previousSongs = music.currentSong :: music.previousSongs
-                            , otherSongs = music.currentSong :: music.otherSongs
-                        }
+    case music.nextSongs of
+        x :: xy ->
+            Random.constant
+                { music
+                    | currentSong = x
+                    , previousSongs = music.currentSong :: music.previousSongs
+                    , nextSongs = xy
+                }
 
-                    -- in the weird case of a music turning out to be Nothing, I have no backup lmao
-                    -- I just keep it as is and log it to the console
-                    Nothing ->
-                        music |> Debug.log "Unable to get next song"
-            )
+        [] ->
+            Random.List.choose music.otherSongs
+                |> Random.map
+                    (\( maybeSong, listSong ) ->
+                        case maybeSong of
+                            Just song ->
+                                { music
+                                    | currentSong = song
+                                    , previousSongs = music.currentSong :: music.previousSongs
+                                    , otherSongs = music.currentSong :: music.otherSongs
+                                }
+
+                            -- in the weird case of a music turning out to be Nothing, I have no backup lmao
+                            -- I just keep it as is and log it to the console
+                            Nothing ->
+                                music |> Debug.log "Unable to get next song"
+                    )
 
 
 previousSongGenerator : Music -> Generator Music
 previousSongGenerator music =
-    Random.List.choose music.otherSongs
-        |> Random.map
-            (\( maybeSong, listSong ) ->
-                case maybeSong of
-                    Just song ->
-                        { music
-                            | currentSong = song
-                            , nextSongs = music.nextSongs ++ [ music.currentSong ]
-                            , otherSongs = music.currentSong :: music.otherSongs
-                        }
+    case music.previousSongs of
+        x :: xy ->
+            Random.constant
+                { music
+                    | currentSong = x
+                    , previousSongs = xy
+                    , nextSongs = music.currentSong :: music.previousSongs
+                }
 
-                    -- in the weird case of a music turning out to be Nothing, I have no backup lmao
-                    -- I just keep it as is and log it to the console
-                    Nothing ->
-                        music |> Debug.log "Unable to get next song"
-            )
+        [] ->
+            Random.List.choose music.otherSongs
+                |> Random.map
+                    (\( maybeSong, listSong ) ->
+                        case maybeSong of
+                            Just song ->
+                                { music
+                                    | currentSong = song
+                                    , nextSongs = music.currentSong :: music.nextSongs
+                                    , otherSongs = music.currentSong :: music.otherSongs
+                                }
+
+                            -- in the weird case of a music turning out to be Nothing, I have no backup lmao
+                            -- I just keep it as is and log it to the console
+                            Nothing ->
+                                music |> Debug.log "Unable to get next song"
+                    )

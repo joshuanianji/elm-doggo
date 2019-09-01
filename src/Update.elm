@@ -24,10 +24,12 @@ update msg model =
             ( { model | music = Result.map updateMusic model.music }
             , case currState of
                 Music.Off ->
-                    Ports.toggleMusic False
-
-                Music.On ->
                     Ports.toggleMusic True
+
+                -- play music
+                Music.On ->
+                    Ports.toggleMusic False
+              -- pause music
             )
 
         RequestNewSong ->
