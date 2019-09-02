@@ -12,9 +12,6 @@ import Visual exposing (Visual, Visuals)
 
 
 
--- MUSIC --
-
-
 {-| The boolean is defined as follows:
 
     True when we want to play

@@ -1,4 +1,4 @@
-module Visual exposing (Visual, Visuals, init, newVisual)
+module Visual exposing (Visual, VisualType(..), Visuals, getVisualType, init, newVisual)
 
 {-| How I handle Videos and Pictures (I call them Visuals)
 
@@ -9,8 +9,10 @@ module Visual exposing (Visual, Visuals, init, newVisual)
 
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (required)
+import Parser exposing ((|.), (|=), DeadEnd, Parser)
 import Random exposing (Generator)
 import Random.List
+import Set
 
 
 
@@ -76,3 +78,59 @@ randomVisualGenerator visuals =
                     Nothing ->
                         visuals |> Debug.log "Unable to get next visual"
             )
+
+
+
+-- VISUALTYPE
+
+
+getVisualType : String -> Result (List DeadEnd) VisualType
+getVisualType =
+    Parser.run visualTypeParser
+
+
+visualTypeParser : Parser VisualType
+visualTypeParser =
+    isolateFile
+        |> Parser.andThen
+            (\str ->
+                case str of
+                    "png" ->
+                        Parser.succeed Image
+
+                    "jpg" ->
+                        Parser.succeed Image
+
+                    "mp4" ->
+                        Parser.succeed Video
+
+                    other ->
+                        Parser.problem <| "unknown file type " ++ other
+            )
+
+
+isolateFile : Parser String
+isolateFile =
+    Parser.succeed identity
+        |. picId
+        |. Parser.symbol "."
+        |= fileType
+
+
+fileType : Parser String
+fileType =
+    Parser.variable
+        { start = Char.isLower
+        , inner = Char.isAlphaNum
+        , reserved = Set.fromList []
+        }
+
+
+picId : Parser ()
+picId =
+    Parser.chompWhile (\c -> not (c == '.'))
+
+
+type VisualType
+    = Image
+    | Video

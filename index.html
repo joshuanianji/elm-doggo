@@ -8,7 +8,6 @@
     <meta name="description" content="The Best Website">
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
     <meta name="author" content="Joshua Ji">
-    <script src="helper.js"></script>
 </head>
 
 <body>
@@ -40,7 +39,7 @@
             return result;
         }
         songsJson = JSON.parse(loadFile("src/songs.json"));
-        visualsJson = JSON.parse(loadFile('src/pictures.json'));
+        visualsJson = JSON.parse(loadFile('src/visuals.json'));
 
         // initialize with first song and picture
         firstSong = songsJson.splice(Math.floor(Math.random() * songsJson.length), 1)[0];
