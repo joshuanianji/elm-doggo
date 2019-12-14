@@ -1,4 +1,4 @@
-module Music exposing (Music, MusicState(..), Song, init, newSong, previousSong, toggle)
+module Music exposing (Music, MusicState(..), Song, init, newSong, previousSong, stateToBool, toggle)
 
 {-| How I handle Music
 -}
@@ -61,6 +61,16 @@ toggle state =
 
         Off ->
             On
+
+
+stateToBool : MusicState -> Bool
+stateToBool state =
+    case state of
+        On ->
+            True
+
+        Off ->
+            False
 
 
 

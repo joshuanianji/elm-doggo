@@ -1,29 +1,46 @@
-module View.Radio exposing (view)
+module View.Radio exposing (Msg, Radio, getMusic, init, subscriptions, update, view)
 
-{-| Configure and display a Radio (controls music)
+{-| Contols music and also controls how it is viewed
 -}
 
+import Browser.Events
 import Element exposing (Element, Orientation(..), fill, height, width)
 import Element.Events as Events
 import Element.Font as Font
 import FontAwesome.Solid
+import Json.Decode
 import Music exposing (Music, MusicState(..))
+import Ports
 import UiUtils.Colors as Colors
 import UiUtils.Icon as Icon
 
 
-type alias Options msg =
-    { toggleMsg : MusicState -> msg
-    , musicInfo : Music
-    , orientation : Orientation
-    , requestNewSongMsg : msg
-    , requestPreviousSongMsg : msg
-    }
+
+-- TYPE
 
 
-view : Options msg -> Element msg
-view options =
-    case options.orientation of
+type Radio
+    = Radio
+        { music : Music
+        , orientation : Orientation
+        }
+
+
+init : Music -> Orientation -> Radio
+init music orientation =
+    Radio
+        { music = music
+        , orientation = orientation
+        }
+
+
+
+-- VIEW
+
+
+view : Radio -> Element Msg
+view (Radio data) =
+    case data.orientation of
         Landscape ->
             Element.column
                 [ width (Element.fillPortion 2)
@@ -33,19 +50,19 @@ view options =
                     [ height <| Element.fillPortion 2
                     , width fill
                     ]
-                    (playPause options)
+                    (playPause <| Radio data)
                 , Element.column
                     [ width fill
                     , height <| Element.fillPortion 3
                     ]
-                    [ songDescription options.musicInfo
+                    [ songDescription data.music
                     , Element.row
                         [ width fill
                         , height fill
                         , Element.centerX
                         ]
-                        [ goBack options
-                        , goForward options
+                        [ goBack <| Radio data
+                        , goForward <| Radio data
                         ]
                     ]
                 ]
@@ -55,38 +72,121 @@ view options =
                 [ width fill
                 , height (Element.fillPortion 3)
                 ]
-                [ songDescription options.musicInfo
+                [ songDescription data.music
                 , Element.row
                     [ width fill
                     , height fill
                     , Element.centerX
                     ]
-                    [ goBack options
-                    , playPause options
-                    , goForward options
+                    [ goBack <| Radio data
+                    , playPause <| Radio data
+                    , goForward <| Radio data
                     ]
                 ]
 
 
 
--- HELPERS --
+-- UPDATE
 
 
-playPause : Options msg -> Element msg
-playPause options =
+type Msg
+    = RequestNewSong
+    | RequestPreviousSong
+    | GotNewMusic Music -- once we get the new song, we get returned the entire updated music list
+    | ToggleMusic
+    | KeyPressed String
+
+
+update : Msg -> Radio -> ( Radio, Cmd Msg )
+update msg (Radio data) =
+    case msg of
+        RequestNewSong ->
+            ( Radio data
+            , Music.newSong GotNewMusic data.music
+            )
+
+        RequestPreviousSong ->
+            ( Radio data
+            , Music.previousSong GotNewMusic data.music
+            )
+
+        GotNewMusic music ->
+            ( Radio { data | music = music }
+            , Ports.playMusic ()
+            )
+
+        ToggleMusic ->
+            let
+                musicField =
+                    data.music
+
+                newState =
+                    Music.toggle musicField.state
+
+                newMusic =
+                    { musicField | state = newState }
+            in
+            ( Radio { data | music = newMusic }
+            , Ports.toggleMusic <| Music.stateToBool newState
+            )
+
+        KeyPressed value ->
+            case value of
+                " " ->
+                    update ToggleMusic (Radio data)
+
+                _ ->
+                    ( Radio data
+                    , Cmd.none
+                    )
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions =
+    Sub.batch
+        [ -- because we need the type on songEnded to be () -> Msg
+          Ports.songEnded (\_ -> RequestNewSong)
+
+        -- space bar pauses music. We need to decode the spacebar though rip.
+        , Browser.Events.onKeyDown (Json.Decode.map KeyPressed keyDecoder)
+        ]
+
+
+keyDecoder =
+    Json.Decode.field "key" Json.Decode.string
+
+
+
+-- HELPER FUNCTIONS
+
+
+getMusic : Radio -> Music
+getMusic (Radio data) =
+    data.music
+
+
+
+-- VIEW HELPERS --
+
+
+playPause : Radio -> Element Msg
+playPause (Radio data) =
     let
         iconWrapper icon =
             Element.el
                 [ Element.centerX
                 , Element.centerY
                 , Font.size 150
-                , Events.onClick (options.toggleMsg options.musicInfo.state)
+                , Events.onClick ToggleMusic
                 , Element.pointer
                 , Element.mouseDown [ Font.color Colors.light ]
                 ]
                 (Icon.view icon)
     in
-    case options.musicInfo.state of
+    case data.music.state of
         Music.On ->
             iconWrapper FontAwesome.Solid.pause
 
@@ -94,7 +194,7 @@ playPause options =
             iconWrapper FontAwesome.Solid.play
 
 
-songDescription : Music -> Element msg
+songDescription : Music -> Element Msg
 songDescription music =
     Element.column
         [ width fill
@@ -108,7 +208,7 @@ songDescription music =
         ]
 
 
-nowPlaying : Element msg
+nowPlaying : Element Msg
 nowPlaying =
     Element.el
         [ Font.size 40
@@ -118,7 +218,7 @@ nowPlaying =
         (Element.text "Now Playing:")
 
 
-songName : Music -> Element msg
+songName : Music -> Element Msg
 songName music =
     Element.paragraph
         [ Font.size 20
@@ -127,7 +227,7 @@ songName music =
         [ Element.text music.currentSong.name ]
 
 
-credit : Music -> Element msg
+credit : Music -> Element Msg
 credit music =
     Element.paragraph
         [ Font.size 18
@@ -141,28 +241,28 @@ credit music =
                     ++ ")"
 
 
-goBack : Options msg -> Element msg
-goBack options =
-    if List.length options.musicInfo.previousSongs == 0 then
+goBack : Radio -> Element Msg
+goBack (Radio data) =
+    if List.length data.music.previousSongs == 0 then
         Element.el
             [ width fill, height fill ]
             Element.none
 
     else
-        buttonWrapper options.requestPreviousSongMsg (Icon.view FontAwesome.Solid.angleDoubleLeft)
+        buttonWrapper RequestPreviousSong (Icon.view FontAwesome.Solid.angleDoubleLeft)
 
 
-goForward : Options msg -> Element msg
-goForward options =
+goForward : Radio -> Element Msg
+goForward (Radio data) =
     let
         nextSongs =
-            options.musicInfo.nextSongs
+            data.music.nextSongs
     in
     if List.length nextSongs == 0 then
-        buttonWrapper options.requestNewSongMsg (Icon.view FontAwesome.Solid.angleDoubleRight)
+        buttonWrapper RequestNewSong (Icon.view FontAwesome.Solid.angleDoubleRight)
 
     else
-        buttonWrapper options.requestNewSongMsg
+        buttonWrapper RequestNewSong
             (Icon.withLayer
                 { string = String.fromInt <| List.length nextSongs
                 , textColor = Colors.dark
@@ -171,7 +271,7 @@ goForward options =
             )
 
 
-buttonWrapper : msg -> Element msg -> Element msg
+buttonWrapper : Msg -> Element Msg -> Element Msg
 buttonWrapper msg icon =
     Element.el
         [ width fill, height fill ]

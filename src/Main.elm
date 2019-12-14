@@ -13,7 +13,7 @@ import Json.Decode
 import Music exposing (Music, MusicState)
 import Ports
 import UiUtils.Colors as Colors
-import View.Radio
+import View.Radio as Radio exposing (Radio)
 import View.Visual
 import Visual exposing (Visuals)
 
@@ -38,7 +38,9 @@ main =
 
 type alias Model =
     { device : Device
-    , music : Result Json.Decode.Error Music
+
+    -- if the music is wack, the errors get propagated to this Result type
+    , radio : Result Json.Decode.Error Radio
     , visuals : Result Json.Decode.Error Visuals
     }
 
@@ -67,9 +69,24 @@ type alias WindowSize =
 
 init : Flags -> ( Model, Cmd Msg )
 init flags =
-    ( { device = classifyDevice flags.windowSize
-      , music = Music.init flags.songsJson
-      , visuals = Visual.init flags.visualsJson
+    let
+        deviceInit =
+            classifyDevice flags.windowSize
+
+        -- if the music has an 'Err' then the error gets propagated to the Radio
+        radioInit =
+            Music.init flags.songsJson
+                |> Result.map
+                    (\music ->
+                        Radio.init music deviceInit.orientation
+                    )
+
+        visualsInit =
+            Visual.init flags.visualsJson
+    in
+    ( { device = deviceInit
+      , radio = radioInit
+      , visuals = visualsInit
       }
     , Cmd.none
     )
@@ -81,13 +98,9 @@ init flags =
 
 type Msg
     = WindowResize WindowSize
-    | ToggleMusic MusicState
-    | RequestNewSong
-    | RequestPreviousSong
-    | GotSong Music -- Acts on newly retrieved song
+    | RadioMsg Radio.Msg
     | RequestNewVisual
     | GotVisual Visuals
-    | KeyPressed String
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -98,47 +111,20 @@ update msg model =
             , Cmd.none
             )
 
-        ToggleMusic currState ->
-            let
-                updateMusic music =
-                    { music | state = Music.toggle currState }
-            in
-            ( { model | music = Result.map updateMusic model.music }
-            , case currState of
-                Music.Off ->
-                    Ports.toggleMusic True
+        RadioMsg radioMsg ->
+            case model.radio of
+                Err _ ->
+                    ( model, Cmd.none )
 
-                -- play music
-                Music.On ->
-                    Ports.toggleMusic False
-              -- pause music
-            )
-
-        RequestNewSong ->
-            ( model
-            , case model.music of
-                Ok m ->
-                    Music.newSong GotSong m
-
-                _ ->
-                    Cmd.none
-            )
-
-        RequestPreviousSong ->
-            ( model
-            , case model.music of
-                Ok m ->
-                    Music.previousSong GotSong m
-
-                _ ->
-                    Cmd.none
-            )
-
-        -- once we got a song, and play the music again.
-        GotSong music ->
-            ( { model | music = Ok music }
-            , Ports.playMusic ()
-            )
+                Ok radio ->
+                    let
+                        ( newRadio, newCmd ) =
+                            Radio.update radioMsg radio
+                                |> Tuple.mapSecond (Cmd.map RadioMsg)
+                    in
+                    ( { model | radio = Ok newRadio }
+                    , newCmd
+                    )
 
         RequestNewVisual ->
             ( model
@@ -154,19 +140,6 @@ update msg model =
             ( { model | visuals = Ok visuals }
             , Cmd.none
             )
-
-        KeyPressed value ->
-            case value of
-                " " ->
-                    case model.music of
-                        Ok m ->
-                            update (ToggleMusic m.state) model
-
-                        _ ->
-                            ( model, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
 
 
 
@@ -191,12 +164,11 @@ audio : Model -> Html Msg
 audio model =
     Html.div [ Attr.class "elm-audio-player" ]
         [ Html.audio
-            [ Attr.src
-                (model.music
-                    |> Result.map .currentSong
-                    |> Result.map .source
-                    |> Result.withDefault ""
-                )
+            [ model.radio
+                |> Result.map Radio.getMusic
+                |> Result.map (.currentSong >> .source)
+                |> Result.withDefault ""
+                |> Attr.src
             , Attr.id "audio-player" -- so the javascript can find it
             ]
             []
@@ -269,21 +241,16 @@ pictureView model =
 
 musicView : Model -> Element Msg
 musicView model =
-    case model.music of
+    case model.radio of
         Err errors ->
             el
                 [ width <| fillPortion 2 ]
             <|
                 errorView "Cannot play music :(" errors
 
-        Ok music ->
-            View.Radio.view
-                { toggleMsg = ToggleMusic
-                , musicInfo = music
-                , orientation = model.device.orientation
-                , requestNewSongMsg = RequestNewSong
-                , requestPreviousSongMsg = RequestPreviousSong
-                }
+        Ok radio ->
+            Radio.view radio
+                |> Element.map RadioMsg
 
 
 
@@ -297,14 +264,6 @@ subscriptions model =
             (\x y ->
                 WindowResize (WindowSize x y)
             )
-
-        -- because we need the type on songEnded to be () -> Msg
-        , Ports.songEnded (\_ -> RequestNewSong)
-
-        -- space bar pauses music. We need to decode the spacebar though rip.
-        , Browser.Events.onKeyDown (Json.Decode.map KeyPressed keyDecoder)
+        , Radio.subscriptions
+            |> Sub.map RadioMsg
         ]
-
-
-keyDecoder =
-    Json.Decode.field "key" Json.Decode.string
