@@ -13,8 +13,8 @@ import Json.Decode
 import Music exposing (Music, MusicState)
 import Ports
 import UiUtils.Colors as Colors
-import View.Radio as Radio exposing (Radio)
-import View.Visual
+import View.Radio exposing (Radio)
+import View.Visual exposing (Visual)
 import Visual exposing (Visuals)
 
 
@@ -41,7 +41,7 @@ type alias Model =
 
     -- if the music is wack, the errors get propagated to this Result type
     , radio : Result Json.Decode.Error Radio
-    , visuals : Result Json.Decode.Error Visuals
+    , visual : Result Json.Decode.Error Visual
     }
 
 
@@ -78,15 +78,19 @@ init flags =
             Music.init flags.songsJson
                 |> Result.map
                     (\music ->
-                        Radio.init music deviceInit.orientation
+                        View.Radio.init music deviceInit.orientation
                     )
 
         visualsInit =
             Visual.init flags.visualsJson
+                |> Result.map
+                    (\visuals ->
+                        View.Visual.init visuals deviceInit.orientation
+                    )
     in
     ( { device = deviceInit
       , radio = radioInit
-      , visuals = visualsInit
+      , visual = visualsInit
       }
     , Cmd.none
     )
@@ -98,9 +102,8 @@ init flags =
 
 type Msg
     = WindowResize WindowSize
-    | RadioMsg Radio.Msg
-    | RequestNewVisual
-    | GotVisual Visuals
+    | RadioMsg View.Radio.Msg
+    | VisualMsg View.Visual.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -119,27 +122,27 @@ update msg model =
                 Ok radio ->
                     let
                         ( newRadio, newCmd ) =
-                            Radio.update radioMsg radio
+                            View.Radio.update radioMsg radio
                                 |> Tuple.mapSecond (Cmd.map RadioMsg)
                     in
                     ( { model | radio = Ok newRadio }
                     , newCmd
                     )
 
-        RequestNewVisual ->
-            ( model
-            , case model.visuals of
-                Ok v ->
-                    Visual.newVisual GotVisual v
+        VisualMsg visualMsg ->
+            case model.visual of
+                Err _ ->
+                    ( model, Cmd.none )
 
-                _ ->
-                    Cmd.none
-            )
-
-        GotVisual visuals ->
-            ( { model | visuals = Ok visuals }
-            , Cmd.none
-            )
+                Ok visual ->
+                    let
+                        ( newVisual, newCmd ) =
+                            View.Visual.update visualMsg visual
+                                |> Tuple.mapSecond (Cmd.map VisualMsg)
+                    in
+                    ( { model | visual = Ok newVisual }
+                    , newCmd
+                    )
 
 
 
@@ -165,7 +168,7 @@ audio model =
     Html.div [ Attr.class "elm-audio-player" ]
         [ Html.audio
             [ model.radio
-                |> Result.map Radio.getMusic
+                |> Result.map View.Radio.getMusic
                 |> Result.map (.currentSong >> .source)
                 |> Result.withDefault ""
                 |> Attr.src
@@ -227,13 +230,10 @@ pictureView model =
         , padding 40
         ]
     <|
-        case model.visuals of
-            Ok visuals ->
-                View.Visual.view
-                    { visualInfo = visuals
-                    , orientation = model.device.orientation
-                    , requestNewVisualMsg = RequestNewVisual
-                    }
+        case model.visual of
+            Ok visual ->
+                View.Visual.view visual
+                    |> Element.map VisualMsg
 
             Err errors ->
                 errorView "Cannot view picture :(" errors
@@ -249,7 +249,7 @@ musicView model =
                 errorView "Cannot play music :(" errors
 
         Ok radio ->
-            Radio.view radio
+            View.Radio.view radio
                 |> Element.map RadioMsg
 
 
@@ -264,6 +264,6 @@ subscriptions model =
             (\x y ->
                 WindowResize (WindowSize x y)
             )
-        , Radio.subscriptions
+        , View.Radio.subscriptions
             |> Sub.map RadioMsg
         ]

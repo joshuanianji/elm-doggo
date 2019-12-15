@@ -1,4 +1,4 @@
-module View.Visual exposing (view)
+module View.Visual exposing (Msg, Visual, init, update, view)
 
 {-| Configure and display a Visual (picture/video)
 -}
@@ -17,23 +17,39 @@ import UiUtils.Icon as Icon
 import Visual exposing (Visuals)
 
 
-type alias Options msg =
-    { visualInfo : Visuals
-    , orientation : Orientation
-    , requestNewVisualMsg : msg
-    }
+
+-- TYPE
 
 
-view : Options msg -> Element msg
-view options =
-    case options.orientation of
+type Visual
+    = Visual
+        { visuals : Visuals
+        , orientation : Orientation
+        }
+
+
+init : Visuals -> Orientation -> Visual
+init visuals orientation =
+    Visual
+        { visuals = visuals
+        , orientation = orientation
+        }
+
+
+
+-- VIEW
+
+
+view : Visual -> Element Msg
+view (Visual data) =
+    case data.orientation of
         Landscape ->
             Element.el
                 [ width <| Element.fillPortion 3
                 , height fill
                 , Element.padding 40
                 ]
-                (picture options)
+                (picture <| Visual data)
 
         Portrait ->
             Element.el
@@ -41,11 +57,11 @@ view options =
                 , height <| Element.fill
                 , Element.padding 40
                 ]
-                (picture options)
+                (picture <| Visual data)
 
 
-picture : Options msg -> Element msg
-picture options =
+picture : Visual -> Element Msg
+picture (Visual data) =
     Element.el
         [ Border.rounded 20
         , Border.solid
@@ -55,12 +71,12 @@ picture options =
         , height fill
         , Element.pointer
         , Element.mouseDown [ Border.color Colors.light ]
-        , Events.onClick options.requestNewVisualMsg
+        , Events.onClick RequestNewVisual
         ]
     <|
         let
             current =
-                options.visualInfo.current
+                data.visuals.current
         in
         case Visual.getVisualType current.src of
             Ok Visual.Image ->
@@ -99,7 +115,7 @@ picture options =
 -- lmao we need Json encoding for html properties? Wack stuff
 
 
-displayVideo : String -> Element msg
+displayVideo : String -> Element Msg
 displayVideo url =
     Element.html <|
         Html.video
@@ -117,3 +133,26 @@ displayVideo url =
                 ]
                 []
             ]
+
+
+
+-- UPDATE
+
+
+type Msg
+    = RequestNewVisual
+    | GotNewVisual Visuals
+
+
+update : Msg -> Visual -> ( Visual, Cmd Msg )
+update msg (Visual data) =
+    case msg of
+        RequestNewVisual ->
+            ( Visual data
+            , Visual.newVisual GotNewVisual data.visuals
+            )
+
+        GotNewVisual newVisuals ->
+            ( Visual { data | visuals = newVisuals }
+            , Cmd.none
+            )
