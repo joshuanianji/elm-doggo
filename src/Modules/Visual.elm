@@ -1,4 +1,4 @@
-module View.Visual exposing (Msg, Visual, init, update, view)
+module Modules.Visual exposing (Msg, Visual, init, update, view)
 
 {-| Configure and display a Visual (picture/video)
 -}

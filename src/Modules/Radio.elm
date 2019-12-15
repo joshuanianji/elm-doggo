@@ -1,4 +1,4 @@
-module View.Radio exposing (Msg, Radio, getMusic, init, subscriptions, update, view)
+module Modules.Radio exposing (Msg, Radio, getMusic, init, subscriptions, update, view)
 
 {-| Contols music and also controls how it is viewed
 -}

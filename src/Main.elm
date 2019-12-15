@@ -10,11 +10,11 @@ import FontAwesome.Styles
 import Html exposing (Html)
 import Html.Attributes as Attr
 import Json.Decode
+import Modules.Radio exposing (Radio)
+import Modules.Visual exposing (Visual)
 import Music exposing (Music, MusicState)
 import Ports
 import UiUtils.Colors as Colors
-import View.Radio exposing (Radio)
-import View.Visual exposing (Visual)
 import Visual exposing (Visuals)
 
 
@@ -78,14 +78,14 @@ init flags =
             Music.init flags.songsJson
                 |> Result.map
                     (\music ->
-                        View.Radio.init music deviceInit.orientation
+                        Modules.Radio.init music deviceInit.orientation
                     )
 
         visualsInit =
             Visual.init flags.visualsJson
                 |> Result.map
                     (\visuals ->
-                        View.Visual.init visuals deviceInit.orientation
+                        Modules.Visual.init visuals deviceInit.orientation
                     )
     in
     ( { device = deviceInit
@@ -102,8 +102,8 @@ init flags =
 
 type Msg
     = WindowResize WindowSize
-    | RadioMsg View.Radio.Msg
-    | VisualMsg View.Visual.Msg
+    | RadioMsg Modules.Radio.Msg
+    | VisualMsg Modules.Visual.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -122,7 +122,7 @@ update msg model =
                 Ok radio ->
                     let
                         ( newRadio, newCmd ) =
-                            View.Radio.update radioMsg radio
+                            Modules.Radio.update radioMsg radio
                                 |> Tuple.mapSecond (Cmd.map RadioMsg)
                     in
                     ( { model | radio = Ok newRadio }
@@ -137,7 +137,7 @@ update msg model =
                 Ok visual ->
                     let
                         ( newVisual, newCmd ) =
-                            View.Visual.update visualMsg visual
+                            Modules.Visual.update visualMsg visual
                                 |> Tuple.mapSecond (Cmd.map VisualMsg)
                     in
                     ( { model | visual = Ok newVisual }
@@ -168,7 +168,7 @@ audio model =
     Html.div [ Attr.class "elm-audio-player" ]
         [ Html.audio
             [ model.radio
-                |> Result.map View.Radio.getMusic
+                |> Result.map Modules.Radio.getMusic
                 |> Result.map (.currentSong >> .source)
                 |> Result.withDefault ""
                 |> Attr.src
@@ -232,7 +232,7 @@ pictureView model =
     <|
         case model.visual of
             Ok visual ->
-                View.Visual.view visual
+                Modules.Visual.view visual
                     |> Element.map VisualMsg
 
             Err errors ->
@@ -249,7 +249,7 @@ musicView model =
                 errorView "Cannot play music :(" errors
 
         Ok radio ->
-            View.Radio.view radio
+            Modules.Radio.view radio
                 |> Element.map RadioMsg
 
 
@@ -264,6 +264,6 @@ subscriptions model =
             (\x y ->
                 WindowResize (WindowSize x y)
             )
-        , View.Radio.subscriptions
+        , Modules.Radio.subscriptions
             |> Sub.map RadioMsg
         ]
