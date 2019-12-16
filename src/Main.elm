@@ -110,7 +110,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         WindowResize windowSize ->
-            ( { model | device = classifyDevice windowSize |> Debug.log "Device" }
+            ( { model | device = classifyDevice windowSize }
             , Cmd.none
             )
 
