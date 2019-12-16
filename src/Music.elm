@@ -154,7 +154,7 @@ previousSongGenerator music =
                 { music
                     | currentSong = x
                     , previousSongs = xy
-                    , nextSongs = music.currentSong :: music.previousSongs
+                    , nextSongs = music.currentSong :: music.nextSongs
                 }
 
         [] ->
