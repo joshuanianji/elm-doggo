@@ -13,6 +13,7 @@ import Music exposing (Music, MusicState(..))
 import Ports
 import UiUtils.Colors as Colors
 import UiUtils.Icon as Icon
+import UiUtils.WindowSize as WindowSize exposing (WindowSize)
 
 
 
@@ -90,7 +91,8 @@ view (Radio data) =
 
 
 type Msg
-    = RequestNewSong
+    = WindowResize WindowSize
+    | RequestNewSong
     | RequestPreviousSong
     | GotNewMusic Music -- once we get the new song, we get returned the entire updated music list
     | ToggleMusic
@@ -100,6 +102,11 @@ type Msg
 update : Msg -> Radio -> ( Radio, Cmd Msg )
 update msg (Radio data) =
     case msg of
+        WindowResize windowSize ->
+            ( Radio { data | orientation = WindowSize.orientation windowSize }
+            , Cmd.none
+            )
+
         RequestNewSong ->
             ( Radio data
             , Music.newSong GotNewMusic data.music
@@ -145,10 +152,16 @@ update msg (Radio data) =
 -- SUBSCRIPTIONS
 
 
+subscriptions : Sub Msg
 subscriptions =
     Sub.batch
         [ -- because we need the type on songEnded to be () -> Msg
           Ports.songEnded (\_ -> RequestNewSong)
+        , Browser.Events.onResize
+            (\x y ->
+                WindowSize.fromXY x y
+                    |> WindowResize
+            )
 
         -- space bar pauses music. We need to decode the spacebar though rip.
         , Browser.Events.onKeyDown (Json.Decode.map KeyPressed keyDecoder)

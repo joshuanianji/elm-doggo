@@ -15,6 +15,7 @@ import Modules.Visual exposing (Visual)
 import Music exposing (Music, MusicState)
 import Ports
 import UiUtils.Colors as Colors
+import UiUtils.WindowSize as WindowSize exposing (WindowSize)
 import Visual exposing (Visuals)
 
 
@@ -57,21 +58,11 @@ type alias Flags =
     }
 
 
-
--- window size.
-
-
-type alias WindowSize =
-    { width : Int
-    , height : Int
-    }
-
-
 init : Flags -> ( Model, Cmd Msg )
 init flags =
     let
         deviceInit =
-            classifyDevice flags.windowSize
+            WindowSize.toDevice flags.windowSize
 
         -- if the music has an 'Err' then the error gets propagated to the Radio
         radioInit =
@@ -110,7 +101,7 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         WindowResize windowSize ->
-            ( { model | device = classifyDevice windowSize }
+            ( { model | device = Debug.log "device" <| classifyDevice windowSize }
             , Cmd.none
             )
 
@@ -178,13 +169,30 @@ audio model =
         ]
 
 
+
+--the actual viewing port
+
+
 page : Model -> Element Msg
 page model =
-    (case model.device.orientation of
+    case model.device.orientation of
         Landscape ->
             row
                 [ width fill
                 , height fill
+                ]
+                [ el
+                    [ width <| fillPortion 3
+                    , height fill
+                    ]
+                  <|
+                    pictureView model
+                , el
+                    [ width <| fillPortion 2
+                    , height fill
+                    ]
+                  <|
+                    musicView model
                 ]
 
         Portrait ->
@@ -192,11 +200,19 @@ page model =
                 [ width fill
                 , height fill
                 ]
-    )
-    <|
-        [ pictureView model
-        , musicView model
-        ]
+                [ el
+                    [ height <| fillPortion 3
+                    , width fill
+                    ]
+                  <|
+                    pictureView model
+                , el
+                    [ height <| fillPortion 2
+                    , width fill
+                    ]
+                  <|
+                    musicView model
+                ]
 
 
 errorView : String -> Json.Decode.Error -> Element Msg
@@ -258,11 +274,12 @@ musicView model =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.batch
         [ Browser.Events.onResize
             (\x y ->
-                WindowResize (WindowSize x y)
+                WindowSize.fromXY x y
+                    |> WindowResize
             )
         , Modules.Radio.subscriptions
             |> Sub.map RadioMsg

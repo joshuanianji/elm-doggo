@@ -3,6 +3,7 @@ module Modules.Visual exposing (Msg, Visual, init, update, view)
 {-| Configure and display a Visual (picture/video)
 -}
 
+import Browser.Events
 import Element exposing (Element, Orientation(..), fill, height, width)
 import Element.Background as Background
 import Element.Border as Border
@@ -14,6 +15,7 @@ import Html.Attributes
 import Json.Encode
 import UiUtils.Colors as Colors
 import UiUtils.Icon as Icon
+import UiUtils.WindowSize as WindowSize exposing (WindowSize)
 import Visual exposing (Visuals)
 
 
@@ -42,22 +44,12 @@ init visuals orientation =
 
 view : Visual -> Element Msg
 view (Visual data) =
-    case data.orientation of
-        Landscape ->
-            Element.el
-                [ width <| Element.fillPortion 3
-                , height fill
-                , Element.padding 40
-                ]
-                (picture <| Visual data)
-
-        Portrait ->
-            Element.el
-                [ width fill
-                , height <| Element.fill
-                , Element.padding 40
-                ]
-                (picture <| Visual data)
+    Element.el
+        [ width fill
+        , height fill
+        , Element.padding 20
+        ]
+        (picture <| Visual data)
 
 
 picture : Visual -> Element Msg
@@ -140,13 +132,19 @@ displayVideo url =
 
 
 type Msg
-    = RequestNewVisual
+    = WindowResize WindowSize
+    | RequestNewVisual
     | GotNewVisual Visuals
 
 
 update : Msg -> Visual -> ( Visual, Cmd Msg )
 update msg (Visual data) =
     case msg of
+        WindowResize windowSize ->
+            ( Visual { data | orientation = WindowSize.orientation windowSize }
+            , Cmd.none
+            )
+
         RequestNewVisual ->
             ( Visual data
             , Visual.newVisual GotNewVisual data.visuals
@@ -156,3 +154,16 @@ update msg (Visual data) =
             ( Visual { data | visuals = newVisuals }
             , Cmd.none
             )
+
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Sub Msg
+subscriptions =
+    Browser.Events.onResize
+        (\x y ->
+            WindowSize.fromXY x y
+                |> WindowResize
+        )
